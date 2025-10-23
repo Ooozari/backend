@@ -52,9 +52,9 @@ const userSchema = new Schema(
 );
 
 // function to encrypt user password
-userSchema.pre("save", async function () {
-  if (!this.password.isModified("password")) return;
-  this.password = bcrypt.hash(this.password, 10);
+userSchema.pre("save", async function (next) {
+  if (!this.password.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
@@ -76,7 +76,7 @@ userSchema.methods.generateAccessToken = function () {
       fullName: this.fullName,
     },
     // sceret key
-    process.env.ACCESS_TOKEN_SCERET,
+    process.env.ACCESS_TOKEN_SECRET,
     // expiry
     {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
@@ -92,7 +92,7 @@ userSchema.methods.generateRefreshToken = function () {
       _id: this._id,
     },
     // sceret key
-    process.env.REFERSH_TOKEN_SCERET,
+    process.env.REFRESH_TOKEN_SECRET,
     // expiry
     {
       expiresIn: process.env.REFERSH_TOKEN_EXPIRY,
