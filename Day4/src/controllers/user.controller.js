@@ -32,8 +32,13 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     //  check for coverImage
-    const coverImageLocalPath = req.files?.coverImage[0]?.path
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path no reliable method 
+    let  coverImageLocalPath;
 
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0 ) {
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
+   
 
     // upload them to cloudinary, avatar
     const avatar = await uploadOnCloudinary(avatarLocalPath)
