@@ -7,15 +7,6 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js'
 
 const registerUser = asyncHandler(async (req, res) => {
     
-    
-  
-    
-    
-   
-    
-    // check for user creation
-    // return res
-
     // get user details from frontend
     const {username, email, fullName, password} = req.body
 
@@ -78,10 +69,12 @@ const registerUser = asyncHandler(async (req, res) => {
     // remove password and refresh token field from response
     const createdUser = await User.findById(user._id).select("-password -refreshToken")
 
+    // check for user creation
     if(!createdUser){
         throw new ApiError(500, "Failed to create user");
     }
 
+    // return res
     res.status(201).json(
         new ApiResponse(200, 
             createdUser,
