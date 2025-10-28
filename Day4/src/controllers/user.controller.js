@@ -4,6 +4,22 @@ import {ApiResponse} from '../utils/apiResponse.js'
 import {User} from '../models/user.model.js'
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
 
+const generateAccessAndRefreshToken = async (userId) => {
+    try {
+        const user = await User.findById(userId)
+        const accessToken = await user.generateAccessToken()
+        const refreshToken = await user.generateRefreshToken()
+
+        // saving refresh token to database
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave : false})
+
+        return {accessToken, refreshToken};
+
+    } catch (error) {
+        throw new ApiError(500, "Error generating tokens (Access and Refresh)")
+    }
+}
 
 const registerUser = asyncHandler(async (req, res) => {
     
@@ -88,4 +104,65 @@ const registerUser = asyncHandler(async (req, res) => {
     )
 })
 
-export {registerUser}
+const loginUser = asyncHandler(async (req, res) => {
+
+
+
+
+
+
+    // 1️⃣ Get user credentials from request body (username/email and password)
+    const {username, email, password} = req.body
+
+    // 2️⃣ Validate input fields (ensure neither is empty)
+    if(!username &&  !email){
+        throw new ApiError(401, "username/email is required")
+    }
+
+    // 3️⃣ Find user in the database by username or email
+    const user = await User.findOne({
+        $or: [{username},{email}]
+    })
+
+    // 4️⃣ If user not found → throw authentication error
+    if(!user){
+        throw new ApiError(404, "User does not exists")
+    }
+
+    // 5️⃣ Compare entered password with hashed password stored in DB
+    const isPasswordValid = await user.isPasswordCorrect(user.password)
+
+    // 6️⃣ If password invalid → throw authentication error
+    if(!isPasswordValid){
+        throw new ApiError(400, "Invalid credentials (username/email)")
+    }
+
+    // 7️⃣ Generate access and refresh tokens for the authenticated user
+    const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
+
+    // Now on logging in the user we have to save the cookies-token
+    const LoggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    // 8️⃣ Store or update refresh token in the user's document (optional but recommended)
+    // 9️⃣ Send tokens to client securely via HTTP-only cookies and response body
+    // 🔟 Return a success response with basic user info (excluding sensitive fields)
+    res.status(200)
+    .cookies("accessToken", accessToken, options)
+    .cookies("refreshToken", refreshToken, options)
+    .json(
+        new ApiResponse(200, {
+            user: LoggedInUser,
+            accessToken,
+            refreshToken,
+        },
+        "User login successfull"
+    )
+    )
+})
+
+export {registerUser, loginUser}
