@@ -124,7 +124,7 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   // 5️⃣ Compare entered password with hashed password stored in DB
-  const isPasswordValid = await user.isPasswordCorrect(user.password);
+  const isPasswordValid = await user.isPasswordCorrect(password);
 
   // 6️⃣ If password invalid → throw authentication error
   if (!isPasswordValid) {
@@ -151,8 +151,8 @@ const loginUser = asyncHandler(async (req, res) => {
   // 🔟 Return a success response with basic user info (excluding sensitive fields)
   res
     .status(200)
-    .cookies("accessToken", accessToken, options)
-    .cookies("refreshToken", refreshToken, options)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
     .json(
       new ApiResponse(
         200,
