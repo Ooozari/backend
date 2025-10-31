@@ -321,11 +321,74 @@ const updateProfile = asyncHandler(async (req, res) => {
   .json(new ApiResponse(200, user, "Profile updated successfully"))
 })
 
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const localAvatarUrl = req.file?.path
+  if(!localAvatarUrl){
+    throw new ApiError(400, "Missing Avatar")
+  }
+  const avatar = await uploadOnCloudinary(localAvatarUrl)
+
+  fs.unlinkSync(localAvatarUrl)
+  if(!avatar) {
+    throw new ApiError(500, "Failed to upload avatar")
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set:{
+        avatar: avatar.url
+      }
+    },
+    {new:true}
+  ).select("-password")
+
+  if(!user) {
+    throw new ApiError(404, "User not found")
+  }
+
+  return res
+  .status(200)
+  .json( new ApiResponse (200, { avatar: avatar.url }, "Avatar Uploaded successfully"))
+
+})
+const updateCoverImage = asyncHandler(async (req, res) => {
+  const localCoverImageUrl = req.file?.path
+
+  if(!localCoverImageUrl){
+    throw new ApiError(400, "Missing cover image")
+  }
+  const coverImage = await uploadOnCloudinary(localCoverImageUrl)
+
+  fs.unlinkSync(localCoverImageUrl)
+
+  if(!coverImage) {
+    throw new ApiError(500, "Failed to upload cover image")
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set:{
+        coverImage: coverImage.url
+      }
+    },
+    {new:true}
+  ).select("-password")
+
+  if(!user) {
+    throw new ApiError(404, "User not found")
+  }
+
+  return res
+  .status(200)
+  .json( new ApiResponse (200, { coverImage: coverImage.url }, "Cover image Uploaded successfully"))
+
+})
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken,changeCurrentPassword, getCurrentUser, updateProfile, updateUserAvatar,updateCoverImage };
 
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken,changeCurrentPassword, getCurrentUser, updateProfile };
-
-
-// const updateProfile = asyncHandler(asyncHandler(req, res)=> {
+// const updateProfile = asyncHandler(async (req, res)=> {
 
 // })
