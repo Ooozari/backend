@@ -27,6 +27,7 @@ const generateAccessAndRefreshToken = async (userId) => {
   }
 };
 
+
 const registerUser = asyncHandler(async (req, res) => {
   // get user details from frontend
   const { username, email, fullName, password } = req.body;
@@ -111,6 +112,7 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User register successfully"));
 });
 
+
 const loginUser = asyncHandler(async (req, res) => {
   // Get user credentials from request body (username/email and password)
   const { username, email, password } = req.body;
@@ -173,6 +175,7 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
+
 const logoutUser = asyncHandler(async (req, res) => {
   if (!req.user?._id) {
     throw new ApiError(401, "Unauthorized request");
@@ -199,6 +202,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User logout successful"));
 });
+
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
   try {
@@ -251,6 +255,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
+
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
@@ -275,11 +280,52 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     validateBeforeSave: false,
   });
 
-  return res.status(200,
-    json(
-      new ApiResponse(200, {}, "Password updated successfully")
-    )
-  )
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password updated successfully"))
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken,changeCurrentPassword };
+
+const getCurrentUser = asyncHandler(async(req, res)=> {
+  const user  = req.user;
+
+  return res.status(200)
+    .json(200, user, "User fetched Successfully")
+})
+
+
+const updateProfile = asyncHandler(async (req, res) => {
+  const {fullName, email} = req.body;
+
+  if(!fullName || !email){
+    throw new ApiError(400, "Full Name and Email is required")
+  }
+
+  // feilds to update
+  const feildsToUpdate = {};
+  if(fullName) feildsToUpdate.fullName = fullName;
+  if(email) feildsToUpdate.email = email;
+
+
+  const user = await User.findByIdAndUpdate(req.user?._id,
+    {
+      $set: feildsToUpdate,
+  },{new: true}).select("-password")
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res
+  .status(200)
+  .json(new ApiResponse(200, user, "Profile updated successfully"))
+})
+
+
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken,changeCurrentPassword, getCurrentUser, updateProfile };
+
+
+// const updateProfile = asyncHandler(asyncHandler(req, res)=> {
+
+// })
