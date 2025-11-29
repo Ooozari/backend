@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
-import { json } from "express";
+import {deleteLocalFile} from "../utils/deleteLocalFile.js"
 
 const options = {
   httpOnly: true,
@@ -26,7 +26,6 @@ const generateAccessAndRefreshToken = async (userId) => {
     throw new ApiError(500, "Error generating tokens (Access and Refresh)");
   }
 };
-
 
 const registerUser = asyncHandler(async (req, res) => {
   // get user details from frontend
@@ -112,7 +111,6 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User register successfully"));
 });
 
-
 const loginUser = asyncHandler(async (req, res) => {
   // Get user credentials from request body (username/email and password)
   const { username, email, password } = req.body;
@@ -175,7 +173,6 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-
 const logoutUser = asyncHandler(async (req, res) => {
   if (!req.user?._id) {
     throw new ApiError(401, "Unauthorized request");
@@ -202,7 +199,6 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User logout successful"));
 });
-
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
   try {
@@ -255,7 +251,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
@@ -285,14 +280,12 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Password updated successfully"))
 });
 
-
 const getCurrentUser = asyncHandler(async(req, res)=> {
   const user  = req.user;
 
   return res.status(200)
     .json(200, user, "User fetched Successfully")
 })
-
 
 const updateProfile = asyncHandler(async (req, res) => {
   const {fullName, email} = req.body;
@@ -328,7 +321,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   }
   const avatar = await uploadOnCloudinary(localAvatarUrl)
 
-  fs.unlinkSync(localAvatarUrl)
+  deleteLocalFile(localAvatarUrl)
   if(!avatar) {
     throw new ApiError(500, "Failed to upload avatar")
   }
@@ -352,6 +345,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   .json( new ApiResponse (200, { avatar: avatar.url }, "Avatar Uploaded successfully"))
 
 })
+
 const updateCoverImage = asyncHandler(async (req, res) => {
   const localCoverImageUrl = req.file?.path
 
@@ -360,7 +354,10 @@ const updateCoverImage = asyncHandler(async (req, res) => {
   }
   const coverImage = await uploadOnCloudinary(localCoverImageUrl)
 
-  fs.unlinkSync(localCoverImageUrl)
+  // deleting the file from local server after successfully uploading to cloudinary
+  // fs.unlinkSync(localCoverImageUrl)
+
+  deleteLocalFile(localCoverImageUrl)
 
   if(!coverImage) {
     throw new ApiError(500, "Failed to upload cover image")
