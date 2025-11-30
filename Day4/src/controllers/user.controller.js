@@ -383,7 +383,87 @@ const updateCoverImage = asyncHandler(async (req, res) => {
 
 })
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken,changeCurrentPassword, getCurrentUser, updateProfile, updateUserAvatar,updateCoverImage };
+const getUserChannelProfile = asyncHandler(async (req, res)=> {
+    // we will get username from params
+    const {username} = req.params
+
+    if(!username?.trim()){
+      throw new ApiError(400, "Username is missing")
+    }
+
+    // aggregation pipeline
+    const channel = await User.aggregate([
+      // pipeline1: Get User Document
+      {
+        $match: {
+          username: username?.toLowerCase()
+        }
+      },
+      // pipeline2: Get subscribers
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "channel", // channelID
+          as: "subscribers"
+        }
+      },
+      // pipeline3: Get User subscribedTo Channels
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "subscriber", // SubscrberID
+          as: "subscribedTo",
+        }
+      },
+      // pipeline4: Adding Feilds for counts and isCurrentUserSubscribed
+      {
+        $addFields: {
+          subscriberCount: {
+            $size: "$subscribers",
+          },
+          channelSubscribedToCount: {
+            $size: "$subscribedTo",
+          },
+          isCurrentUserSubscribed: {
+            $cond: {
+              if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+              then: true,
+              else: false
+            }
+          }
+        }
+      },
+      // pipeline5: sending value specific 
+      {
+        $project: {
+          fullName: 1,
+          username: 1,
+          subscriberCount: 1,
+          channelSubscribedToCount: 1,
+          isCurrentUserSubscribed: 1,
+          email: 1,
+          avatar: 1,
+          coverImage: 1,
+          createdAt: 1,
+        }
+      }
+    ])
+
+    if(!channel || !channel.length){
+      throw new ApiError (404, "Channel does not exist")
+    }
+
+    //TODO: Log the channel 
+
+    return res.
+    status(200)
+    .json(new ApiResponse(200, channel[0], "Success, Channel details Fetched."))
+
+})
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken,changeCurrentPassword, getCurrentUser, updateProfile, updateUserAvatar,updateCoverImage, getUserChannelProfile };
 
 
 // const updateProfile = asyncHandler(async (req, res)=> {
