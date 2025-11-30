@@ -549,6 +549,7 @@ export {
   updateUserAvatar,
   updateCoverImage,
   getUserChannelProfile,
+  getWatchHistory,
 };
 
 // const updateProfile = asyncHandler(async (req, res)=> {
